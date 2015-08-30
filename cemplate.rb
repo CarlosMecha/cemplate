@@ -4,6 +4,8 @@ require 'erb'
 require 'optparse'
 require 'ostruct'
 
+require './lib/context'
+
 class ConfigurationFile
 
     attr_reader :filename
@@ -40,17 +42,6 @@ class ConfigurationFile
 
 end
 
-class Context
-
-    def initialize()
-        @prueba = "caca"
-    end
-
-    def get_binding()
-        return binding()
-    end
-
-end
 
 class Parser
     
@@ -120,6 +111,7 @@ if __FILE__ == $0
 
     options = Opts.parse(ARGV)
 
+
     conf = ConfigurationFile.new(options.filename)
     parser = Parser.new()
     context = Context.new()
@@ -127,6 +119,8 @@ if __FILE__ == $0
     conf.read() do |content|
         parser.parse(content, context)
     end
+
+    puts(create_from_yaml('settings.yml'))
 
 end
 
