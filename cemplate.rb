@@ -8,8 +8,8 @@ require 'yaml'
 #
 # Context object. Contains all the required information to inject into the template.
 #
-# Developed by Andrea Pavoni
-# http://andreapavoni.com/blog/2013/4/create-recursive-openstruct-from-a-ruby-hash
+# (Idea based on Andrea Pavoni's post
+# http://andreapavoni.com/blog/2013/4/create-recursive-openstruct-from-a-ruby-hash)
 #
 class Context < OpenStruct
 

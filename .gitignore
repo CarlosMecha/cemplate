@@ -41,4 +41,5 @@ build/
 
 # Template files
 *.cemp
+*.yml
 
