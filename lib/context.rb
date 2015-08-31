@@ -15,8 +15,7 @@ class Context < OpenStruct
 
         if(hash)
             hash.each() do | key, value |
-                self[key.to_sym()] = (value.is_a?(Hash) ? self.class.new(value) : value)
-                new_ostruct_member(key)
+                set_key(key.to_sym(), (value.is_a?(Hash) ? self.class.new(value) : value))
             end
         end
     end
@@ -37,14 +36,12 @@ class Context < OpenStruct
         target = self
 
         path.split('.').each() do | key |
-            if(target.to_h().has_key?(key.to_sym()))
-                target = target[key.to_sym()]
+            k_sym = key.to_sym()
+            if(target.has_key?(k_sym))
+                target = target.get_key(k_sym)
             else
-                if(error)
-                    raise ArgumentError.new('Value #{path} not found.')
-                else
-                    return default
-                end
+                raise ArgumentError.new("Value #{path} not found.") unless !error
+                return default
             end
 
         end
@@ -57,19 +54,21 @@ class Context < OpenStruct
     #
     def set(path, value)
         target = self
-        keys = path.split(',')
+        keys = path.split('.')
+        puts(keys)
 
         while(!keys.empty?)
             key = keys.shift()
             k_sym = key.to_sym()
+            puts(keys)
 
             if(keys.empty?)
-                target[k_sym] = value
+                target.set_key(k_sym, value)
             else
-                if(!target.to_h().has_key?(k_sym) or !target[k_sym].is_a(Context))
-                    target[k_sym] = Context.new()
+                if(!target.has_key?(k_sym) or !target.get(k_sym).is_a(Context))
+                    target.set_key(k_sym, self.class.new())
                 end
-                target = target[k_sym]
+                target = target.get_key(k_sym)
             end
         end
 
@@ -80,9 +79,9 @@ class Context < OpenStruct
     #
     # Returns true if the context contains the full path.
     #
-    def has(path)
+    def has?(path)
         begin
-            get(path, error=true)
+            get(path, error: true)
             return true
         rescue ArgumentError => e
             return false
@@ -96,11 +95,13 @@ class Context < OpenStruct
     def merge!(other_context)
         
         other_context.each_pair() do | key, value |
-            k_sym = key.to_sym()
-            if(to_h().has_key?(k_sym) and v.is_a(Context) and self[k_sym].is_a(Context))
-                self[k_sym].merge(v)
+            if(value == nil)
+                set_key(key, nil)
+            elsif(get_key(key).respond_to?(:merge) and value.respond_to?(:merge))
+                set_key(key, get_key(key).merge(value))
             else
-                self[k_sym] = v.dup()
+                v = value.dup() rescue value
+                set_key(key, v)
             end
 
         end
@@ -113,10 +114,37 @@ class Context < OpenStruct
     # provided one.
     #
     def merge(other_context)
-        new_context = self.dup()
-        return new_context.merge!(other_context)
+        return dup().merge!(other_context)
     end
 
+    #
+    # Sets a key.
+    #
+    def set_key(key, value)
+        self[key] = value
+        new_ostruct_member(key)
+    end
+
+    #
+    # Returns true if the context has the key (as symbol).
+    #
+    def has_key?(key)
+        return to_h().has_key?(key)
+    end
+
+    #
+    # Returns the value of a key. if error is set to true,
+    # it will throw an exception if not found, otherwise the default
+    # value.
+    #
+    def get_key(key, default: nil, error: false)
+        if(has_key?(key))
+            return self[key]
+        end
+        
+        raise ArgumentError.new("Value #{key} not found.") unless !error
+        return default
+    end
 end
 
 #
